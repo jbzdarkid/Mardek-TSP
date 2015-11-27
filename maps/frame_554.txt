@@ -1,0 +1,305 @@
+function E_NewMap(ts, w, h)
+{
+  tileset = ts;
+  TILESHEET = flash.display.BitmapData.loadBitmap("tilesheet_" + tileset);
+  DEFAULT_TILE = TILESHEET.getPixel(48,0) != 16711935?10:20;
+  map = new Array(h);
+  var _loc2_ = 0;
+  while(_loc2_ < h)
+  {
+    map[_loc2_] = new Array(w);
+    var _loc1_ = 0;
+    while(_loc1_ < w)
+    {
+      map[_loc2_][_loc1_] = DEFAULT_TILE;
+      _loc1_ = _loc1_ + 1;
+    }
+    _loc2_ = _loc2_ + 1;
+  }
+  E_DrawMap();
+}
+function E_DrawMap()
+{
+  TILESHEET = flash.display.BitmapData.loadBitmap("tilesheet_" + tileset);
+  DEFAULT_TILE = TILESHEET.getPixel(48,0) != 16711935?10:20;
+  for(var _loc19_ in Econt)
+  {
+    Econt[_loc19_].removeMovieClip();
+  }
+  var _loc7_ = 0;
+  while(_loc7_ < map.length)
+  {
+    var _loc5_ = 0;
+    while(_loc5_ < map[0].length)
+    {
+      var _loc3_ = Econt.createEmptyMovieClip("T_" + _loc5_ + "_" + _loc7_,1000 * _loc7_ + _loc5_);
+      _loc3_._x = TILESIZE * _loc5_;
+      _loc3_._y = TILESIZE * _loc7_;
+      _loc3_.TILE = _loc0_ = map[_loc7_][_loc5_];
+      DrawTile(_loc3_,_loc0_);
+      _loc3_.attachMovie("ClickBox","BOX",207);
+      _loc3_.COORDS = [_loc5_,_loc7_];
+      _loc3_.colour = new Color(_loc3_);
+      _loc3_.BOX.onRollOver = function()
+      {
+        if(Key.isDown(16))
+        {
+          this.onPress();
+        }
+        _root.EditorMenu.COORDS = this._parent._x / _root.TILESIZE + ", " + this._parent._y / _root.TILESIZE;
+        this._parent.colour.setTransform({"ra":100,"rb":0,"ga":100,"gb":0,"ba":100,"bb":100,"aa":100,"ab":0});
+      };
+      _loc3_.BOX.onRollOut = function()
+      {
+        this._parent.colour.setTransform({"ra":100,"rb":0,"ga":100,"gb":0,"ba":100,"bb":0,"aa":100,"ab":0});
+      };
+      _loc3_.BOX.onPress = function()
+      {
+        this.onRollOut();
+        if(Key.isDown(KEYS.C))
+        {
+          _root.E_SEL_TILE = this._parent.TILE;
+          _root.DrawTile(_root.EditorMenu.TileSelCont,_root.E_SEL_TILE,32);
+        }
+        else
+        {
+          _root.map[this._parent.COORDS[1]][this._parent.COORDS[0]] = _root.E_SEL_TILE;
+          _root.DrawTile(this._parent,this._parent.TILE = _root.E_SEL_TILE);
+        }
+      };
+      _loc5_ = _loc5_ + 1;
+    }
+    _loc7_ = _loc7_ + 1;
+  }
+  DrawTile(EditorMenu.TileSelCont,E_SEL_TILE,32);
+  EditorMenu.TileSelCont.onPress = function()
+  {
+    this._parent.gotoAndStop(2);
+    var _loc5_ = 0;
+    while(_loc5_ < _root.TILESHEET.height / 16 * 10)
+    {
+      var _loc6_ = [[0,0],[370,0],[370,300]];
+      var _loc4_ = 1;
+      while(!(_loc4_ > (_loc5_ >= 30?1:3)))
+      {
+        var _loc3_ = this._parent.TileList.createEmptyMovieClip("T" + _loc4_ + "_" + _loc5_,_loc4_ * 1000 + 100 + _loc5_);
+        _loc3_._x = 36 * _loc5_ % 10 + _loc6_[_loc4_ - 1][0];
+        _loc3_._y = 36 * Math.floor(_loc5_ / 10) + _loc6_[_loc4_ - 1][1];
+        _root.DrawTile(_loc3_,_loc3_.TILE = String(_loc4_) + _loc5_,32);
+        _loc3_.attachMovie("ClickBox","BOX",207);
+        _loc3_.BOX._width = _loc3_.BOX._height = 32;
+        _loc3_.BOX.onPress = function()
+        {
+          _root.E_SEL_TILE = this._parent.TILE;
+          _root.DrawTile(_root.EditorMenu.TileSelCont,_root.E_SEL_TILE,32);
+          _root.EditorMenu.gotoAndStop(1);
+        };
+        _loc4_ = _loc4_ + 1;
+      }
+      _loc5_ = _loc5_ + 1;
+    }
+  };
+  EditorMenu.ExportBtn.label = "Export";
+  EditorMenu.ExportBtn.onPress = function()
+  {
+    var _loc2_ = "map=[\n";
+    var _loc1_ = 0;
+    while(_loc1_ < map.length)
+    {
+      _loc2_ = _loc2_ + ("\t[" + map[_loc1_].toString() + "]" + (_loc1_ != map.length - 1?",":"") + "\n");
+      _loc1_ = _loc1_ + 1;
+    }
+    _loc2_ = _loc2_ + "];";
+    System.setClipboard(_loc2_);
+    trace("Copied map to clipboard.");
+  };
+}
+function E_RefineEdges()
+{
+  var _loc9_ = [];
+  var _loc7_ = TilesetEdges[tileset];
+  var _loc8_ = 0;
+  while(_loc8_ < map.length)
+  {
+    _loc9_[_loc8_] = new Array(map[0].length);
+    var _loc6_ = 0;
+    while(_loc6_ < map[0].length)
+    {
+      var _loc1_ = null;
+      var _loc5_ = [["black","walls"],["water","waterEdges"]];
+      var _loc3_ = 0;
+      while(_loc3_ < _loc5_.length)
+      {
+        var _loc2_ = _loc7_[_loc5_[_loc3_][0]];
+        var _loc4_ = {};
+        for(var _loc11_ in _loc7_[_loc5_[_loc3_][1]])
+        {
+          _loc4_["E" + _loc7_[_loc5_[_loc3_][1]][_loc11_]] = true;
+        }
+        if(map[_loc8_][_loc6_] == _loc2_ && !_loc4_["E" + map[_loc8_][_loc6_]])
+        {
+          if(!(map[_loc8_ - 1][_loc6_] == _loc2_) && !(map[_loc8_ - 1][_loc6_] == null) && !_loc4_["E" + map[_loc8_ - 1][_loc6_]] && !(_loc8_ == 0))
+          {
+            if(!(map[_loc8_][_loc6_ - 1] == _loc2_))
+            {
+              _loc1_ = 0;
+            }
+            else if(!(map[_loc8_][_loc6_ + 1] == _loc2_))
+            {
+              _loc1_ = 2;
+            }
+            else
+            {
+              _loc1_ = 1;
+            }
+            
+          }
+          if(!(map[_loc8_ + 1][_loc6_] == _loc2_) && !(map[_loc8_ + 1][_loc6_] == null) && !_loc4_["E" + map[_loc8_ + 1][_loc6_]] && !(_loc8_ == map.length - 1))
+          {
+            if(!(map[_loc8_][_loc6_ - 1] == _loc2_))
+            {
+              _loc1_ = 6;
+            }
+            else if(!(map[_loc8_][_loc6_ + 1] == _loc2_))
+            {
+              _loc1_ = 4;
+            }
+            else
+            {
+              _loc1_ = 5;
+            }
+            
+          }
+          if(!(map[_loc8_][_loc6_ - 1] == _loc2_) && !(map[_loc8_][_loc6_ - 1] == null) && !_loc4_["E" + map[_loc8_][_loc6_ - 1]] && !(_loc6_ == 0))
+          {
+            if(!(map[_loc8_ - 1][_loc6_] == _loc2_))
+            {
+              _loc1_ = 0;
+            }
+            else if(!(map[_loc8_ + 1][_loc6_] == _loc2_))
+            {
+              _loc1_ = 6;
+            }
+            else
+            {
+              _loc1_ = 7;
+            }
+            
+          }
+          if(!(map[_loc8_][_loc6_ + 1] == _loc2_) && !(map[_loc8_][_loc6_ + 1] == null) && !_loc4_["E" + map[_loc8_][_loc6_ + 1]] && !(_loc6_ == map[0].length - 1))
+          {
+            if(!(map[_loc8_ - 1][_loc6_] == _loc2_))
+            {
+              _loc1_ = 2;
+            }
+            else if(!(map[_loc8_ + 1][_loc6_] == _loc2_))
+            {
+              _loc1_ = 4;
+            }
+            else
+            {
+              _loc1_ = 3;
+            }
+            
+          }
+          if(!(_loc1_ == null))
+          {
+            _loc9_[_loc8_][_loc6_] = _loc7_[_loc5_[_loc3_][1]][_loc1_];
+          }
+        }
+        _loc3_ = _loc3_ + 1;
+      }
+      _loc6_ = _loc6_ + 1;
+    }
+    _loc8_ = _loc8_ + 1;
+  }
+  _loc8_ = 0;
+  while(_loc8_ < _loc9_.length)
+  {
+    _loc6_ = 0;
+    while(_loc6_ < _loc9_[0].length)
+    {
+      if(_loc9_[_loc8_][_loc6_] != null)
+      {
+        var _loc10_ = Econt["T_" + _loc6_ + "_" + _loc8_];
+        map[_loc8_][_loc6_] = _loc0_ = _loc9_[_loc8_][_loc6_];
+        _loc10_.TILE = _loc0_;
+        DrawTile(_loc10_,_loc0_);
+      }
+      _loc6_ = _loc6_ + 1;
+    }
+    _loc8_ = _loc8_ + 1;
+  }
+}
+EDITOR_MODE = true;
+_CURSOR.removeMovieClip();
+Mouse.show();
+playMusic("none");
+E_SEL_TILE = 10;
+TilesetEdges = {"volcano":{"black":10,"walls":[15,118,16,117,116,17,115,18],"water":126,"waterEdges":[120,133,121,132,131,122,130,123,124,134]},"temple_FIRE":{"black":10,"walls":[130,133,131,143,141,142,140,132]},"cave_aqua":{"black":10,"walls":[18,15,19,16,110,13,17,14],"water":118,"waterEdges":[123,120,124,121,125,122,126,119]}};
+ZOOM_LEVEL = 3;
+Econt.onEnterFrame = function()
+{
+  if(this.keydown)
+  {
+    if(!Key.isDown(37) && !Key.isDown(39) && !Key.isDown(38) && !Key.isDown(40) && !Key.isDown(33) && !Key.isDown(34) && !Key.isDown(KEYS.R))
+    {
+      this.keydown = false;
+    }
+    return undefined;
+  }
+  var _loc3_ = 16 * _root.ZOOM_LEVEL;
+  if(Key.isDown(37))
+  {
+    this._x = this._x + _loc3_;
+  }
+  else if(Key.isDown(39))
+  {
+    this._x = this._x - _loc3_;
+  }
+  
+  if(Key.isDown(38))
+  {
+    this._y = this._y + _loc3_;
+  }
+  else if(Key.isDown(40))
+  {
+    this._y = this._y - _loc3_;
+  }
+  
+  var _loc4_ = false;
+  if(Key.isDown(33))
+  {
+    _loc4_ = 1;
+    this.keydown = true;
+  }
+  if(Key.isDown(34))
+  {
+    _loc4_ = -1;
+    this.keydown = true;
+  }
+  if(_loc4_)
+  {
+    _root.ZOOM_LEVEL = _root.ZOOM_LEVEL + _loc4_;
+    if(_root.ZOOM_LEVEL < 1)
+    {
+      _root.ZOOM_LEVEL = 1;
+    }
+    this._width = _root.map[0].length * 16 * _root.ZOOM_LEVEL;
+    this._height = _root.map.length * 16 * _root.ZOOM_LEVEL;
+  }
+  if(Key.isDown(36))
+  {
+    this._x = this._y = 0;
+  }
+  if(Key.isDown(KEYS.R))
+  {
+    _root.E_RefineEdges();
+    this.keydown = true;
+  }
+};
+if(!(map == null))
+{
+  E_DrawMap();
+  EditorMenu.LoadArea = area;
+}
