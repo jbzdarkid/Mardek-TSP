@@ -89,6 +89,9 @@ for i in range(n):
 			continue
 		distances[i+1][j+1] = calc_dist(data, chests[i], chests[j])
 
+# Step 2 - For each collection of chests, find the best order.
+selections = [None] * (2**(n+2))
+
 # NB start and end points, so n+2 elements.
 # As far as TSP goes I see a 4-stage solution:
 # Step 1. Make a board from every chest to every other, containing the shortest distance. This is simply done by an nxn array.
